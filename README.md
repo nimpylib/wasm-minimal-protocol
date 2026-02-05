@@ -1,0 +1,37 @@
+
+# wasm-minimal-protocol for :crown:
+
+A minimal protocol to write [typst plugins](https://typst.app/docs/reference/foundations/plugin/).
+
+## You want to write a plugin
+
+> For other languages like Rust, ref <https://github.com/astrale-sharp/wasm-minimal-protocol> 
+
+Nim plugins can use this pkg to automatically implement the protocol with a macro:
+
+```Nim
+// Nim file
+import pkg/wasm_minmal_protocol
+proc hello(): string{.export_typst_bytes.} =
+  "hello from Nim"
+```
+
+```typst
+// Typst file
+#let p = plugin("/path/to/plugin.wasm")
+#let _ = p.wasm_minimal_protocol_NimMain()  // current needed
+
+#assert(str(p.hello()) == "hello from Nim")
+```
+
+ref <https://typst.app/docs/reference/foundations/plugin/> for details.
+You should also take a look at this repository's [examples](./tests/).
+
+## wasi-stub
+
+The runtime used by typst do not allow the plugin to import any function (beside the ones used by the protocol). In particular, if your plugin is compiled for WASI, it will not be able to be loaded by typst.
+
+To get around that, you can use wasi-stub. It will detect all WASI-related imports, and replace them by stubs that do nothing.
+
+Install it from <https://github.com/astrale-sharp/wasm-minimal-protocol>
+

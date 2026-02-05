@@ -1,0 +1,9 @@
+/bin/
+# result of `testament`
+/testresults/
+nimcache/
+htmldocs/
+!/tests/
+/tests/*
+!/tests/*.nim
+!/tests/*.nims
