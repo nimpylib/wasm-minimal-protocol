@@ -12,6 +12,15 @@ proc (a1, a2, ..., an) -> `if failed` (int32)
 template send_result(s) =
   wasm_minimal_protocol_send_result_to_host(s[0].addr, Size s.len)
 
+proc isByteOpenArray(n: NimNode): bool =
+  if n.kind != nnkBracketExpr or n.len != 2:
+    return
+  let head = n[0]
+  if not (head.eqIdent"openArray" or head.eqIdent"seq"): return
+  let ele = n[1]
+  result = ele.eqIdent"char" or
+    ele.eqIdent"byte" or ele.eqIdent"uint8"
+
 macro export_typst_bytes*(def) =
   let ori_prc_id = def.name
   var nname = ori_prc_id
@@ -36,8 +45,9 @@ macro export_typst_bytes*(def) =
     let lastIdx = e.len - 1
     let lastIdx2 = lastIdx - 1
     let eType = e[lastIdx2]
-    if not (eType.kind == nnkEmpty or eType.eqIdent"string"):
-      error "only string args allowed for this macro", eType
+    if not (eType.kind == nnkEmpty or
+        eType.eqIdent"string" or eType.isByteOpenArray):
+      error "only string or byte-seq-like args allowed for this macro", eType
     if e[lastIdx].kind != nnkEmpty:
       error "no default args allowed currently", e[i+1]
       #TOOD:defval, aware in typst
@@ -121,7 +131,9 @@ when isMainModule:
   # mainly to ensure at least macro evaluation works
   proc f(s, s2: string): string{.export_typst_bytes.} =
     s & '+' & s2 & '$'
+  proc f_tot_len_expr(s, s2: openArray[char]): string{.export_typst_bytes.} =
+    $s.len & '+' & $s2.len
 
   proc hello(): string{.export_typst_bytes.} =
     "hello from Nim"
-  
+
