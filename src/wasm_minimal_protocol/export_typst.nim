@@ -17,6 +17,13 @@ proc (a1, a2, ..., an) -> `if failed` (int32)
 template send_result(s) =
   wasm_minimal_protocol_send_result_to_host(s[0].addr, Size s.len)
 
+when gen_t:
+  proc isExactOpenArray(n: NimNode, ele: var NimNode): bool =
+    if n.kind != nnkBracketExpr or n.len != 2: return
+    result = n[0].eqIdent"openArray"
+    if result:
+      ele = n[1]
+
 proc isByteOpenArray(n: NimNode): bool =
   if n.kind != nnkBracketExpr or n.len != 2:
     return
@@ -70,13 +77,10 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
     let lastIdx = e.len - 1
     let lastIdx2 = lastIdx - 1
     var eType = e[lastIdx2]
-    var notStrLike = false
-    if not (eType.kind == nnkEmpty or
-        eType.isStrLike):
-      if bytesOnly:
+    if bytesOnly:
+      if not (eType.kind == nnkEmpty or
+          eType.isStrLike):
         error "only string or byte-seq-like args allowed for this macro", eType
-      else:
-        notStrLike = true
     let defval = e[lastIdx]
     
     template has_defval: bool = defval.kind != nnkEmpty
@@ -92,6 +96,13 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
           typstExpr = newStrLitNode toTypst defval
           if eType.kind == nnkEmpty:
             eType = newCall("typeof", defval)
+        # to support openArray[T] (convert it to seq[T])
+        var ele: NimNode
+        if eType.isExactOpenArray(ele):
+          eType = if ele.eqIdent"char":
+            ident"string"
+          else:
+            nnkBracketExpr.newTree(ident"seq", ele)
     else:
       no_defval
 
