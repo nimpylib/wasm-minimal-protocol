@@ -15,6 +15,7 @@ when isMainModule:
   var
     outdir = ""
     nimSrc = ""
+    nim = ""
 
   for (kind, k, v) in getopt(shortNoVal = {'h'},
                              longNoVal = @["help"]):
@@ -31,11 +32,13 @@ Options:
   -h, --help            Show this help message
 """       
         quit(0)
+      of "nim":
+        nim = v
       else:
         quit("Unknown option: " & k)
     of cmdArgument:
       if nimSrc != "":
         quit("Only one nim source file is allowed")
       nimSrc = k
-  compile(nimSrc, outdir)
+  compile(nimSrcPath=nimSrc, outdir=outdir, nim=nim)
 

@@ -17,10 +17,10 @@ proc checked_run(cmd: string): string{.discardable.} =
     raise newException(ValueError, "command failed: " & cmd & "\nOutput:\n" & tup.output)
   result = tup.output
 
-proc compile*(nimSrcPath: string, outdir = "") =
+proc compile*(nimSrcPath: string, outdir = "", nim = "") =
   ## `outdir` empty means same dir as `nimSrcPath`
   let wasm_args = get_wasm_build_flags(NimVersion)
-  let nimExe = findExeOrRaise("nim")
+  let nimExe = if nim == "": findExeOrRaise("nim") else: nim
   let cmd = nimExe & " c " & wasm_args & " -u:nimPreviewSlimSystem --hints:off "
 
   let wasmFile = (if outdir.len == 0:
