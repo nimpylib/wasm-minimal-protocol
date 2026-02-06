@@ -31,22 +31,19 @@ proc isStrLike(n: NimNode): bool =
 when gen_t:
   const collectTypstExports* = CacheTable"wasm_minimal_protocol_typst_exports"
 
-proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool) =
+proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_name = "") =
   when gen_t:
     var curParamNames = newNimNode nnkFormalParams
   let ori_prc_id = def.name
 
-  let ori_name = ori_prc_id.strVal
-  let nname = genSym(nskProc, "typst_exported_" & ori_name)
   let ori_prc_name = ori_prc_id.strVal
-  let exportcPragma = nnkExprColonExpr.newTree(
-    ident"exportc",
-    newStrLitNode "wasm_minimal_protocol_" & ori_prc_name
-  )
+  let nname = genSym(nskProc, "typst_exported_" & ori_prc_name)
+  let export_wasm_name = if export_name == "": ori_prc_name else: export_name
+  let exportcPragma = ident"exportc"
   let exportPragma = nnkExprColonExpr.newTree(
     ident"codegenDecl",
     newCall(bindSym"export_wasm_decl",
-      newStrLitNode ori_prc_name
+      newStrLitNode export_wasm_name
     )
   )
   let params = def.params
@@ -176,21 +173,25 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool) =
   ndef.add resBody
   result.add ndef
   when gen_t:
-    collectTypstExports[ori_name] = curParamNames
+    collectTypstExports[export_wasm_name] = curParamNames
 
 const wasm = defined(wasm)
-template export_pragma_impl(def; bytesOnly: bool) =
+template export_pragma_impl(def; bytesOnly: bool, export_name = "") =
   when wasm:
     result = newStmtList(def)
-    result.export_typst_impl(def, bytesOnly)
+    result.export_typst_impl(def, bytesOnly, export_name)
   else:
     def.addPragma ident"used"
     result = def
 
 macro export_typst_bytes*(def) = export_pragma_impl(def, bytesOnly=true)
+macro export_typst_bytes_as*(name: static[string]; def) = export_pragma_impl(def,
+  bytesOnly=true, export_name=name)
 macro export_typst*(def) = export_pragma_impl(def, bytesOnly=false)
+macro export_typst_as*(name: static[string], def) = export_pragma_impl(def,
+  bytesOnly=false, export_name=name)
 
-macro export_typst_from*(def: proc) =
+macro export_typst_from*(def: proc, export_name: static[string] = "") =
   result = newStmtList()
   when wasm:
-    result.export_typst_impl(def.getImpl(), bytesOnly=false)
+    result.export_typst_impl(def.getImpl(), bytesOnly=false, export_name=export_name)
