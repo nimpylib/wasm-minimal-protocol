@@ -1,5 +1,5 @@
 
-import ./wasm_minimal_protocol/[export_typst, wasi, typst_gen]
+import ./wasm_minimal_protocol/[export_typst, typst_gen]
 export export_typst, typst_gen
 
 template imp_exp(name){.dirty.} =
@@ -15,9 +15,7 @@ when isMainModule:
   import std/parseopt
   import ./wasm_minimal_protocol/main
   var
-    outdir = ""
-    nimSrc = ""
-    nim = ""
+    outdir, nimSrc, nim = ""
     additions = ""
 
   for (kind, k, v) in getopt(shortNoVal = {'h'},
@@ -35,8 +33,8 @@ Options:
   -h, --help            Show this help message
 """       
         quit(0)
-      of "nim":
-        nim = v
+      of "nim": nim = v
+      of "nimcache": additions.add " --nimcache:" & v
       of "d", "define":
         additions.add " -d:" & v
       else:
@@ -45,5 +43,6 @@ Options:
       if nimSrc != "":
         quit("Only one nim source file is allowed")
       nimSrc = k
-  compile(nimSrcPath=nimSrc, outdir=outdir, nim=nim, additionalFlags=additions)
+  compile(nimSrcPath=nimSrc, outdir=outdir, nim=nim,
+    additionalFlags=additions)
 
