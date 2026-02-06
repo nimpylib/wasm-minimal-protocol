@@ -24,9 +24,11 @@ proc isByteOpenArray(n: NimNode): bool =
 proc isStrLike(n: NimNode): bool =
   result = n.eqIdent"string" or n.isByteOpenArray
 
-proc export_typst_impl*(def: NimNode; bytesOnly: bool): NimNode =
+proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool) =
   let ori_prc_id = def.name
-  var nname = ori_prc_id
+
+  let ori_name = ori_prc_id.strVal
+  let nname = genSym(nskProc, "typst_exported_" & ori_name)
   let ori_prc_name = ori_prc_id.strVal
   let exportcPragma = nnkExprColonExpr.newTree(
     ident"exportc",
@@ -95,7 +97,7 @@ proc export_typst_impl*(def: NimNode; bytesOnly: bool): NimNode =
       if notStrLike:
         sufResBody.add quote do:
           let `ne` = try:
-            Cbor.decode(`neStr`, `eType`)
+            Cbor.decode(`neStr`, typeof(`eType`))
           except UnexpectedValueError as e:
             send_result(e.msg)
             return 1
@@ -103,9 +105,7 @@ proc export_typst_impl*(def: NimNode; bytesOnly: bool): NimNode =
   let resBody = newStmtList()
   let nargsp1 = nargs + 1
   let final = if nargs == 0:
-    # no arg, cannot overload
-    let ori_name = ori_prc_id.strVal
-    nname = genSym(nskProc, "typst_exported_" & ori_name)
+    # no arg
     newStmtList()
   else:
     # if has arg
@@ -136,7 +136,7 @@ proc export_typst_impl*(def: NimNode; bytesOnly: bool): NimNode =
     finally:
       `final`
   let emptyn = newEmptyNode()
-  let ndef = def.copyNimNode
+  let ndef = newNimNode nnkProcDef
   ndef.add nname
   ndef.add emptyn # term rewrite
   ndef.add emptyn # generic params
@@ -148,13 +148,17 @@ proc export_typst_impl*(def: NimNode; bytesOnly: bool): NimNode =
   )
   ndef.add emptyn # reversed
   ndef.add resBody
-  result = newStmtList(
-    def,
-    ndef
-  )
+  result.add ndef
 
-macro export_typst_bytes*(def) = export_typst_impl(def, bytesOnly=true)
-macro export_typst*(def) = export_typst_impl(def, bytesOnly=false)
+template export_pragma_impl(def; bytesOnly: bool) =
+  result = newStmtList(def)
+  result.export_typst_impl(def, bytesOnly)
+macro export_typst_bytes*(def) = export_pragma_impl(def, bytesOnly=true)
+macro export_typst*(def) = export_pragma_impl(def, bytesOnly=false)
+
+macro export_typst_from*(def: proc) =
+  result = newStmtList()
+  result.export_typst_impl(def.getImpl(), bytesOnly=false)
 
 {.emit: """void NimMain();""".}
 proc wasm_minimal_protocol_NimMain*: Size{.exportc, cdecl,
@@ -171,11 +175,16 @@ when isMainModule:
   proc f_tot_len_expr(s, s2: openArray[char]): string{.export_typst_bytes.} =
     $s.len & '+' & $s2.len
 
-  proc add(f, f2: float): float{.export_typst.} =
-    f + f2
-  
+
+  proc gcdInts(arr: seq[int]): int{.export_typst.} = gcd arr
+
+  # we cannot use export_typst_from here
+  #  because math.frexp, hypot is overloaded
   proc frexp(x: float): (float, int){.export_typst.} = math.frexp(x)
-  proc binom(n, k: int): int{.export_typst.} = math.binom(n, k)
+  proc hypot(x, y: float): float{.export_typst.} = math.hypot(x, y)
+
+  #proc binom(n, k: int): int{.export_typst.} = math.binom(n, k)
+  export_typst_from math.binom
 
   proc hello(): string{.export_typst_bytes.} =
     "hello from Nim"

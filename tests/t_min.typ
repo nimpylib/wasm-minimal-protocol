@@ -25,11 +25,13 @@
     cbor(f(..arr))
   }
 
-  let add = bind(p.add)
+  let gcdInts = bind(p.gcdInts)
+  let hypot = bind(p.hypot)
   let frexp = bind(p.frexp)
   let binom = bind(p.binom)
 
-  eq(4.6, add(1.2, 3.4))
+  eq(3, gcdInts((12, 3)))
+  eq(5, hypot(3.0, 4.0))
   eq(frexp(1.2), (0.6, 1))
   eq(binom(6, 2), 15)
 
