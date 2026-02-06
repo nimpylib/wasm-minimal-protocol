@@ -69,7 +69,7 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
     let e = params[i]
     let lastIdx = e.len - 1
     let lastIdx2 = lastIdx - 1
-    let eType = e[lastIdx2]
+    var eType = e[lastIdx2]
     var notStrLike = false
     if not (eType.kind == nnkEmpty or
         eType.isStrLike):
@@ -90,6 +90,8 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
       else:
         if has_defval:
           typstExpr = newStrLitNode toTypst defval
+          if eType.kind == nnkEmpty:
+            eType = newCall("typeof", defval)
     else:
       no_defval
 
