@@ -1,5 +1,5 @@
 #{
-  let p = plugin("../bin/t_examples.wasm")
+  let p = plugin("../bin/t_raw_wasm_no_gen.wasm")
   let _ = p.wasm_minimal_protocol_NimMain()
 
   let eq(res, res1) = assert(res == res1)
