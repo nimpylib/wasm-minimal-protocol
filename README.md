@@ -22,7 +22,9 @@ import pkg/wasm_minmal_protocol
 import std/[math, strutils]
 proc cbrt(x: float): float{.export_typst.} = math.cbrt(x)
 proc format(fmt: string, args: varargs[string]): string{.
-  export_typst_as"str-format".} = fmt % args
+  export_typst_as: "str-format".} = fmt % args
+export_typst_from fac, "factorial"
+# or `export_typst_from fac` to export as `fac`
 ```
 
 compile using the binary this package provide, `nim-typst-plugin` (available if install via `nimble install`,
@@ -35,6 +37,8 @@ nim-typst-plugin -d:gen_typst /path/to/plugin.nim
 
 > Note this reply on your [Nim][] installation and [`wasi-stub`][wasi-stub] (see below)
 
+> `-d:gen_typst` to also generate .typ file for handy use, other than bare `.wasm`
+
 Then write:
 
 ```typst
@@ -44,9 +48,9 @@ Then write:
 #assert(2.0 == cbrt(8.0))
 #str-format("$1 $2 was somehow translated literally", "violet", "evergarden")
 #str-format("$# and $# refer to each", "spice", "wolf")
+#factorial(3)
 ```
 
-ref <https://typst.app/docs/reference/foundations/plugin/> for details.
 You should also take a look at this repository's [examples](./tests/).
 
 ## wasi-stub
