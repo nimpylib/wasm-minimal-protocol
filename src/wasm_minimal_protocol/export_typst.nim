@@ -163,12 +163,19 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool) =
   when gen_t:
     collectTypstExports[ori_name] = curParamNames
 
+const wasm = defined(wasm)
 template export_pragma_impl(def; bytesOnly: bool) =
-  result = newStmtList(def)
-  result.export_typst_impl(def, bytesOnly)
+  when wasm:
+    result = newStmtList(def)
+    result.export_typst_impl(def, bytesOnly)
+  else:
+    def.addPragma ident"used"
+    result = def
+
 macro export_typst_bytes*(def) = export_pragma_impl(def, bytesOnly=true)
 macro export_typst*(def) = export_pragma_impl(def, bytesOnly=false)
 
 macro export_typst_from*(def: proc) =
   result = newStmtList()
-  result.export_typst_impl(def.getImpl(), bytesOnly=false)
+  when wasm:
+    result.export_typst_impl(def.getImpl(), bytesOnly=false)
