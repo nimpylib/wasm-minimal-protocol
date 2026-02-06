@@ -17,7 +17,7 @@ proc checked_run(cmd: string): string{.discardable.} =
     raise newException(ValueError, "command failed: " & cmd & "\nOutput:\n" & tup.output)
   result = tup.output
 
-proc compile*(nimSrcPath: string, outdir = "", nim = "") =
+proc compile*(nimSrcPath: string, outdir = "", nim = "", additionalFlags = "") =
   ## `outdir` empty means same dir as `nimSrcPath`
   let wasm_args = get_wasm_build_flags(NimVersion)
   let nimExe = if nim == "": findExeOrRaise("nim") else: nim
@@ -29,7 +29,7 @@ proc compile*(nimSrcPath: string, outdir = "", nim = "") =
     let (_, name, _) = nimSrcPath.splitFile()
     joinPath(outdir, name & ".wasm")
   ).quoteShell
-  checked_run(cmd & " -o:" & wasmFile & ' ' & nimSrcPath.quoteShell)
+  checked_run(cmd & " -o:" & wasmFile & ' ' & additionalFlags.quoteShell & ' ' & nimSrcPath.quoteShell)
   assert fileExists wasmFile
 
   let stubExe = findExeOrRaise("wasi-stub")

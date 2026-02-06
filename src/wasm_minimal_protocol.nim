@@ -1,6 +1,6 @@
 
-import ./wasm_minimal_protocol/[export_typst, wasi]
-export export_typst
+import ./wasm_minimal_protocol/[export_typst, wasi, typst_gen]
+export export_typst, typst_gen
 
 {.emit: """void NimMain();""".}
 proc wasm_minimal_protocol_NimMain*: Size{.exportc, cdecl,
@@ -16,6 +16,7 @@ when isMainModule:
     outdir = ""
     nimSrc = ""
     nim = ""
+    additions = ""
 
   for (kind, k, v) in getopt(shortNoVal = {'h'},
                              longNoVal = @["help"]):
@@ -34,11 +35,13 @@ Options:
         quit(0)
       of "nim":
         nim = v
+      of "d", "define":
+        additions.add " -d:" & v
       else:
         quit("Unknown option: " & k)
     of cmdArgument:
       if nimSrc != "":
         quit("Only one nim source file is allowed")
       nimSrc = k
-  compile(nimSrcPath=nimSrc, outdir=outdir, nim=nim)
+  compile(nimSrcPath=nimSrc, outdir=outdir, nim=nim, additionalFlags=additions)
 

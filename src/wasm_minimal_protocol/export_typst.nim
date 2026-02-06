@@ -1,7 +1,9 @@
 
 import std/macros
-import ./[wasi, cbor]
+import ./[wasi, cbor, typst_gen_decl]
 export cbor
+when gen_t:
+  import std/macrocache
 
 proc wasm_minimal_protocol_write_args_to_buffer(buffer: pointer){.importc, codegenDecl: typst_env_decl.}
 proc wasm_minimal_protocol_send_result_to_host(buffer: pointer, length_of_buffer: Size){.importc, codegenDecl: typst_env_decl.}
@@ -24,7 +26,12 @@ proc isByteOpenArray(n: NimNode): bool =
 proc isStrLike(n: NimNode): bool =
   result = n.eqIdent"string" or n.isByteOpenArray
 
+when gen_t:
+  const collectTypstExports* = CacheTable"wasm_minimal_protocol_typst_exports"
+
 proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool) =
+  when gen_t:
+    var curParamNames = newNimNode nnkFormalParams
   let ori_prc_id = def.name
 
   let ori_name = ori_prc_id.strVal
@@ -79,6 +86,8 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool) =
       let id = genSym(nskParam, "a" & $nargs)
       resParams.add newIdentDefs(id, bindSym"Size")
       let ne = ident e[j].strVal
+      when gen_t:
+        curParamNames.add ne
       let nargs1s = newIntLitNode(nargs - 1)
       let totLenI1s = quote do: `totLensId`[`nargs1s`]
       infResBody.add quote do:
@@ -151,6 +160,8 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool) =
   ndef.add emptyn # reversed
   ndef.add resBody
   result.add ndef
+  when gen_t:
+    collectTypstExports[ori_name] = curParamNames
 
 template export_pragma_impl(def; bytesOnly: bool) =
   result = newStmtList(def)

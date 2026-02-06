@@ -14,8 +14,6 @@ A minimal protocol to write [typst plugins](https://typst.app/docs/reference/fou
 # Nim file
 # /path/to/plugin.nim
 import pkg/wasm_minmal_protocol
-proc hello(): string{.export_typst_bytes.} =
-  "hello from Nim"
 
 import std/math
 proc cbrt(x: float): float{.export_typst.} = math.cbrt(x)
@@ -26,7 +24,7 @@ or after `nimble build`, it'll be in `./bin/` directory)
 
 
 ```shell
-nim-typst-plugin /path/to/plugin.nim
+nim-typst-plugin -d:gen_typst /path/to/plugin.nim
 ```
 
 > Note this reply on your [Nim][] installation and `wasi-stub` (see below)
@@ -35,12 +33,9 @@ Then write:
 
 ```typst
 // Typst file
-#let p = plugin("/path/to/plugin.wasm")
-#let _ = p.wasm_minimal_protocol_NimMain()  // current needed
-
-#assert(str(p.hello()) == "hello from Nim")
-// use cbor for non-bytes argument
-#assert(2.0 == cbor(p.cbrt(cbor.encode(8.0))))
+#import "/path/to/plugin.typ": *
+// no need to call cbor
+#assert(2.0 == p.cbrt(8.0))
 ```
 
 ref <https://typst.app/docs/reference/foundations/plugin/> for details.
