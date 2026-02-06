@@ -2,12 +2,14 @@
 import ./wasm_minimal_protocol/[export_typst, wasi, typst_gen]
 export export_typst, typst_gen
 
-{.emit: """void NimMain();""".}
-proc wasm_minimal_protocol_NimMain*: Size{.exportc, cdecl,
-    codegenDecl: export_wasm_decl("wasm_minimal_protocol_NimMain").} =
-  proc NimMain(){.importc, nodecl.}
-  NimMain()
-  0
+template imp_exp(name){.dirty.} =
+  import ./wasm_minimal_protocol/name
+  export name
+
+when not defined(wasmCustomInit):
+  imp_exp(init_def)
+else:
+  imp_exp(init)
 
 when isMainModule:
   import std/parseopt
