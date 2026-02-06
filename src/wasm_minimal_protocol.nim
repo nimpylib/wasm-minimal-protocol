@@ -27,7 +27,17 @@ proc isStrLike(n: NimNode): bool =
 proc export_typst_impl*(def: NimNode; bytesOnly: bool): NimNode =
   let ori_prc_id = def.name
   var nname = ori_prc_id
-  var exportcPragma = ident"exportc"
+  let ori_prc_name = ori_prc_id.strVal
+  let exportcPragma = nnkExprColonExpr.newTree(
+    ident"exportc",
+    newStrLitNode "wasm_minimal_protocol_" & ori_prc_name
+  )
+  let exportPragma = nnkExprColonExpr.newTree(
+    ident"codegenDecl",
+    newCall(bindSym"export_wasm_decl",
+      newStrLitNode ori_prc_name
+    )
+  )
   let params = def.params
   let nIdentDefsp1 = params.len
   let nIdentDefs = nIdentDefsp1 - 1
@@ -95,10 +105,6 @@ proc export_typst_impl*(def: NimNode; bytesOnly: bool): NimNode =
   let final = if nargs == 0:
     # no arg, cannot overload
     let ori_name = ori_prc_id.strVal
-    exportcPragma = nnkExprColonExpr.newTree(
-      exportcPragma,
-      newStrLitNode ori_name,
-    )
     nname = genSym(nskProc, "typst_exported_" & ori_name)
     newStmtList()
   else:
@@ -137,6 +143,7 @@ proc export_typst_impl*(def: NimNode; bytesOnly: bool): NimNode =
   ndef.add resParams
   ndef.add nnkPragma.newTree(
     exportcPragma,
+    exportPragma,
     ident"cdecl",
   )
   ndef.add emptyn # reversed
@@ -150,7 +157,8 @@ macro export_typst_bytes*(def) = export_typst_impl(def, bytesOnly=true)
 macro export_typst*(def) = export_typst_impl(def, bytesOnly=false)
 
 {.emit: """void NimMain();""".}
-proc wasm_minimal_protocol_NimMain*: Size{.exportc, cdecl.} =
+proc wasm_minimal_protocol_NimMain*: Size{.exportc, cdecl,
+    codegenDecl: export_wasm_decl("wasm_minimal_protocol_NimMain").} =
   proc NimMain(){.importc, nodecl.}
   NimMain()
   0
@@ -166,7 +174,7 @@ when isMainModule:
   proc add(f, f2: float): float{.export_typst.} =
     f + f2
   
-  proc myfrexp(x: float): (float, int){.export_typst.} = math.frexp(x)
+  proc frexp(x: float): (float, int){.export_typst.} = math.frexp(x)
   proc binom(n, k: int): int{.export_typst.} = math.binom(n, k)
 
   proc hello(): string{.export_typst_bytes.} =

@@ -24,11 +24,11 @@ template pylib(x, ver) =
   requires if pylibPre == "": x & ver
            else: pylibPre & x
 
-pylib "wasm_backend", " ^= 0.1.0"
+pylib "wasm_backend", " ^= 0.1.1"
 
 task testMin, "minimal test":
   #taskWithArgs buildWasmLib, "build .wasm(wasi) library":
-  let res = gorgeEx("nim-wasm-build-flags " & NimVersion, cache=NimVersion)
+  let res = gorgeEx("nim-wasm-build-flags  --export-all=false " & NimVersion, cache=NimVersion)
   if res.exitCode != 0:
     quit res.output
   let cmd = "c " & res.output & " -u:nimPreviewSlimSystem --hints:off "

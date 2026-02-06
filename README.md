@@ -16,7 +16,7 @@ proc hello(): string{.export_typst_bytes.} =
   "hello from Nim"
 
 import std/math
-proc mycbrt(x: float): float{.export_typst.} = math.cbrt(x)
+proc cbrt(x: float): float{.export_typst.} = math.cbrt(x)
 ```
 
 ```typst
@@ -26,7 +26,7 @@ proc mycbrt(x: float): float{.export_typst.} = math.cbrt(x)
 
 #assert(str(p.hello()) == "hello from Nim")
 // use cbor for non-bytes argument
-#assert(2.0 == cbor(p.mycbrt(cbor.encode(8.0))))
+#assert(2.0 == cbor(p.cbrt(cbor.encode(8.0))))
 ```
 
 ref <https://typst.app/docs/reference/foundations/plugin/> for details.
