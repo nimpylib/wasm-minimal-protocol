@@ -1,5 +1,9 @@
 
 # wasm-minimal-protocol for :crown:
+[![CI (Typst Compile)](https://github.com/nimpylib/wasm-minimal-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/nimpylib/wasm-minimal-protocol/actions/workflows/ci.yml)
+[![nim-api-docs](https://github.com/nimpylib/wasm-minimal-protocol/actions/workflows/nim-api-docs.yml/badge.svg)][docs]
+
+[docs]: https://wasm-minimal-potocol.nimpylib.org
 
 A minimal protocol to write [typst plugins](https://typst.app/docs/reference/foundations/plugin/).
 
