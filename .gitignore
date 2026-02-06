@@ -6,5 +6,6 @@ htmldocs/
 !/tests/
 /tests/*
 !/tests/*.typ
+/tests/*_lib.typ
 !/tests/*.nim
 !/tests/*.nims
