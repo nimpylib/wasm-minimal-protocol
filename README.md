@@ -4,13 +4,15 @@
 A minimal protocol to write [typst plugins](https://typst.app/docs/reference/foundations/plugin/).
 
 ## You want to write a plugin
+[Nim]: https://nim-lang.org/
 
 > For other languages like Rust, ref <https://github.com/astrale-sharp/wasm-minimal-protocol> 
 
-Nim plugins can use this pkg to automatically implement the protocol with a macro:
+[Nim][] plugins can use this repo to automatically implement the protocol with a macro:
 
 ```Nim
 # Nim file
+# /path/to/plugin.nim
 import pkg/wasm_minmal_protocol
 proc hello(): string{.export_typst_bytes.} =
   "hello from Nim"
@@ -18,6 +20,18 @@ proc hello(): string{.export_typst_bytes.} =
 import std/math
 proc cbrt(x: float): float{.export_typst.} = math.cbrt(x)
 ```
+
+compile using the binary this package provide, `nim-typst-plugin` (available if install via `nimble install`,
+or after `nimble build`, it'll be in `./bin/` directory)
+
+
+```shell
+nim-typst-plugin /path/to/plugin.nim
+```
+
+> Note this reply on your [Nim][] installation and `wasi-stub` (see below)
+
+Then write:
 
 ```typst
 // Typst file

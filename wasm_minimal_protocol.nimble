@@ -6,7 +6,9 @@ description   = "A minimal protocol to write typst plugins."
 license       = "MIT"
 srcDir        = "src"
 installExt    = @["nim"]
-bin           = @["wasm_minimal_protocol"]
+binDir        = "bin"
+const mainBin = "nim-typst-plugin"
+namedBin["wasm_minimal_protocol"] = mainBin
 
 
 # Dependencies
@@ -24,23 +26,18 @@ template pylib(x, ver) =
   requires if pylibPre == "": x & ver
            else: pylibPre & x
 
-pylib "wasm_backend", " ^= 0.1.1"
+pylib "wasm_backend", " ^= 0.1.2"
 
-task testMin, "minimal test":
+task test, "test, assuming `nimble build` has been run":
   #taskWithArgs buildWasmLib, "build .wasm(wasi) library":
-  let res = gorgeEx("nim-wasm-build-flags  --export-all=false " & NimVersion, cache=NimVersion)
+  let testDir = "tests/"
+  let name = "t_examples"
+  let nameBase = testDir & name
+  let res = gorgeEx(binDir & '/' & mainBin & ' ' & nameBase & " -O:" & binDir)
   if res.exitCode != 0:
     quit res.output
-  let cmd = "c " & res.output & " -u:nimPreviewSlimSystem --hints:off "
 
-  let name = "t_min"
-  let o = "bin/" & name & ".wasm"
-  selfExec cmd & " -o:" & o & ' ' & srcDir & "/" & bin[0]
-  let resStub = gorgeEx("wasi-stub " & o & " -o bin/" & name & "_s.wasm")
-  if resStub.exitCode != 0:
-    quit resStub.output
-  let outPre = "tests/" & name
-  exec "typst c --root . " & outPre & ".typ"
+  exec "typst c --root . " & nameBase & ".typ"
   echo "[ok] minimal test passed"
-  rmFile outPre & ".pdf"
+  rmFile nameBase & ".pdf"
 

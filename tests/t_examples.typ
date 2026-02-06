@@ -1,8 +1,5 @@
-// This is to be run when `nimble testMin`.
-//  ref ../src/wasm_minimal_protocol.nim's
-//   `when isMainModule` for nim side code.
 #{
-  let p = plugin("../bin/t_min_s.wasm")
+  let p = plugin("../bin/t_examples.wasm")
   let _ = p.wasm_minimal_protocol_NimMain()
 
   let eq(res, res1) = assert(res == res1)
