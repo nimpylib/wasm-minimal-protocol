@@ -29,7 +29,7 @@ proc compile*(nimSrcPath: string, outdir = "", nim = "", additionalFlags = "") =
     let (_, name, _) = nimSrcPath.splitFile()
     joinPath(outdir, name & ".wasm")
   ).quoteShell
-  checked_run(cmd & " -o:" & wasmFile & ' ' & additionalFlags.quoteShell & ' ' & nimSrcPath.quoteShell)
+  checked_run(cmd & " -o:" & wasmFile & ' ' & additionalFlags & ' ' & nimSrcPath.quoteShell)
   assert fileExists wasmFile
 
   let stubExe = findExeOrRaise("wasi-stub")

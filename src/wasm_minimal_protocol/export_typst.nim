@@ -4,6 +4,7 @@ import ./[wasi, cbor, typst_gen_decl]
 export cbor
 when gen_t:
   import std/macrocache
+  export macrocache.pairs
 
 proc wasm_minimal_protocol_write_args_to_buffer(buffer: pointer){.importc, codegenDecl: typst_env_decl.}
 proc wasm_minimal_protocol_send_result_to_host(buffer: pointer, length_of_buffer: Size){.importc, codegenDecl: typst_env_decl.}
@@ -94,7 +95,7 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool) =
         `totLensId`[`nargs`] = `totLenI1s` + `id`
       call.add ne
 
-      let neStr = if notStrLike:
+      let neStr = if not bytesOnly:
         ident "str" & ne.strVal
       else: ne
       sufResBody.add quote do:
@@ -103,12 +104,12 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool) =
                 cast[pointer](cast[int](`bufId`) + `totLenI1s`),
                 `id`
         )
-      if notStrLike:
+      if not bytesOnly:
         let Cbor_decodeId = bindSym"Cbor_decode"
         sufResBody.add quote do:
           let `ne` = try:
             `Cbor_decodeId`(`neStr`, typeof(`eType`))
-          except UnexpectedValueError as e:
+          except CborError as e:
             send_result(e.msg)
             return 1
 
@@ -129,7 +130,7 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool) =
       # #0 is 0
     newCall("dealloc", bufId)
 
-  if not resStrLike:
+  if not bytesOnly:
     let Cbor_encodeId = bindSym"Cbor_encode"
     call = quote do:
       `Cbor_encodeId`(`call`)
