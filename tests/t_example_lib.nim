@@ -8,7 +8,8 @@ proc str_count(s, sub: string): int{.export_typst.} = s.count(sub)
 proc runeLen(s: string): int{.export_typst.} = unicode.runeLen(s)
 proc hypot(x, y: float): float{.export_typst.} = math.hypot(x, y)
 
-proc format(fmt: string, args: seq[string]): string{.export_typst_as"n-format".} = fmt % args
+proc format(fmt: string, args: openArray[string]): string{.export_typst_as"n-format".} = fmt % args
+proc vformat(fmt: string, args: varargs[string]): string{.export_typst_as"n-format-v".} = fmt.format(args)
 
 type MyDateTime* = object
   year, month, day, hour, minute, second: int

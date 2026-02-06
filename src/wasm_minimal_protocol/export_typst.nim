@@ -18,11 +18,15 @@ template send_result(s) =
   wasm_minimal_protocol_send_result_to_host(s[0].addr, Size s.len)
 
 when gen_t:
-  proc isExactOpenArray(n: NimNode, ele: var NimNode): bool =
+  proc isExactOpenArrayOrVarargs(n: NimNode, ele: var NimNode, isVarargs: var bool): bool =
     if n.kind != nnkBracketExpr or n.len != 2: return
-    result = n[0].eqIdent"openArray"
-    if result:
-      ele = n[1]
+    let head = n[0]
+    isVarargs = if head.eqIdent"openArray": false
+    elif head.eqIdent"varargs": true
+    else:
+      return
+    result = true
+    ele = n[1]
 
 proc isByteOpenArray(n: NimNode): bool =
   if n.kind != nnkBracketExpr or n.len != 2:
@@ -88,6 +92,7 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
       if has_defval:
         error "no default args allowed here", defval
     when gen_t:
+      var isVarargs = false
       var typstExpr: NimNode
       if bytesOnly:
         no_defval
@@ -96,10 +101,10 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
           typstExpr = newStrLitNode toTypst defval
           if eType.kind == nnkEmpty:
             eType = newCall("typeof", defval)
-        # to support openArray[T] (convert it to seq[T])
+        # to support openArray[T] and varargs[T] (convert it to seq[T])
         var ele: NimNode
-        if eType.isExactOpenArray(ele):
-          eType = if ele.eqIdent"char":
+        if eType.isExactOpenArrayOrVarargs(ele, isVarargs):
+          eType = if ele.eqIdent"char" and not isVarargs:
             ident"string"
           else:
             nnkBracketExpr.newTree(ident"seq", ele)
@@ -112,7 +117,13 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
       resParams.add newIdentDefs(id, bindSym"Size")
       let ne = ident e[j].strVal
       when gen_t:
-        curParamNames.add nnkExprEqExpr.newTree(ne, typstExpr)
+        curParamNames.add:
+          if isVarargs: nnkPrefix.newTree(ident"*", ne)
+          else:
+            if isVarargs:  # previous is varargs, current is not varargs, not supported,
+              # kw-only args, not supported yet
+              error "kw-only args not supported yet", ne
+            nnkExprEqExpr.newTree(ne, typstExpr)
       let nargs1s = newIntLitNode(nargs - 1)
       let totLenI1s = quote do: `totLensId`[`nargs1s`]
       infResBody.add quote do:

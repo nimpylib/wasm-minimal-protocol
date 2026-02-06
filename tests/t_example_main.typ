@@ -21,6 +21,10 @@
     n-format("hello $#, and $#", ("Tim", "Lily"))
     == "hello Tim, and Lily"
   )
+  assert(
+    n-format-v("hello $#, and $#", "Tim", "Lily")
+    == "hello Tim, and Lily"
+  )
   let dt = parseDatetime("2025-03-20T01:02:03")
   let res = if (useCborious()) {
     (2025, 3, 20, 1, 2, 3)

@@ -21,7 +21,7 @@ import pkg/wasm_minmal_protocol
 
 import std/[math, strutils]
 proc cbrt(x: float): float{.export_typst.} = math.cbrt(x)
-proc format(fmt: string, args: seq[string]): string{.
+proc format(fmt: string, args: varargs[string]): string{.
   export_typst_as"str-format".} = fmt % args
 ```
 
@@ -42,8 +42,8 @@ Then write:
 #import "/path/to/plugin.typ": *
 // no need to call cbor
 #assert(2.0 == cbrt(8.0))
-#str-format("$1 $2 was somehow translated literally", ("violet", "evergarden"))
-#str-format("$# and $# refer to each", ("spice", "wolf"))
+#str-format("$1 $2 was somehow translated literally", "violet", "evergarden")
+#str-format("$# and $# refer to each", "spice", "wolf")
 ```
 
 ref <https://typst.app/docs/reference/foundations/plugin/> for details.
