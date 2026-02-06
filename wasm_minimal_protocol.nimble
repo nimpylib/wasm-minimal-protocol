@@ -34,13 +34,19 @@ pylib "wasm_backend", " ^= 0.1.2"
 task test, "test, assuming `nimble build` has been run":
   #taskWithArgs buildWasmLib, "build .wasm(wasi) library":
   let testDir = "tests/"
-  let name = "t_examples"
-  let nameBase = testDir & name
-  let res = gorgeEx(binDir & '/' & mainBin & ' ' & nameBase & " -O:" & binDir)
-  if res.exitCode != 0:
-    quit res.output
+  for fp in listFiles(testDir):
+    if not fp.endsWith(".typ"): continue
+    let nameBase = fp[0..^5]
+    var nimBase = nameBase
+    if nameBase.endsWith"_main":
+      nimBase = nimBase[0..^6] & "_lib"
+    elif nameBase.endsWith"_lib": continue
 
-  exec "typst c --root . " & nameBase & ".typ"
-  echo "[ok] minimal test passed"
-  rmFile nameBase & ".pdf"
+    let res = gorgeEx(binDir & '/' & mainBin & ' ' & nimBase & " -O:" & binDir & " -d:gen_typst")
+    if res.exitCode != 0:
+      quit res.output
+
+    exec "typst c --root . " & nameBase & ".typ"
+    echo "[ok] " & nameBase & " passed"
+    rmFile nameBase & ".pdf"
 
