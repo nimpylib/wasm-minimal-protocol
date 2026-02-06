@@ -189,11 +189,22 @@ template export_pragma_impl(def; bytesOnly: bool, export_name = "") =
 macro export_typst_bytes*(def) = export_pragma_impl(def, bytesOnly=true)
 macro export_typst_bytes_as*(name: static[string]; def) = export_pragma_impl(def,
   bytesOnly=true, export_name=name)
-macro export_typst*(def) = export_pragma_impl(def, bytesOnly=false)
-macro export_typst_as*(name: static[string], def) = export_pragma_impl(def,
-  bytesOnly=false, export_name=name)
+macro export_typst*(def) =
+  runnableExamples:
+    proc hello: string{.export_typst.} = "hello"
+  export_pragma_impl(def, bytesOnly=false)
+macro export_typst_as*(name: static[string], def) =
+  runnableExamples:
+    proc hello: string{.export_typst_as"hello-from-nim".} = "hello"
+  export_pragma_impl(def, bytesOnly=false, export_name=name)
 
 macro export_typst_from*(def: proc, export_name: static[string] = "") =
+  runnableExamples:
+    import std/editdistance as libed
+    export_typst_from editDistance, "edit-distance"
+    import std/unidecode
+    export_typst_from unidecode.unidecode
+    # unidecode("北京") == "Bei Jing "
   result = newStmtList()
   when wasm:
     result.export_typst_impl(def.getImpl(), bytesOnly=false, export_name=export_name)
