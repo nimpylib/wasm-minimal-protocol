@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.1.0"
+version       = "0.1.1"
 author        = "litlighilit"
 description   = "A minimal protocol to write typst plugins."
 license       = "MIT"
@@ -14,7 +14,10 @@ namedBin["wasm_minimal_protocol"] = mainBin
 # Dependencies
 
 requires "nim >= 2.0.8"
-requires "cbor_serialization"
+when defined(cborious):
+  requires "cborious"
+else:
+  requires "cbor_serialization"
 
 
 var pylibPre = "https://github.com/nimpylib"
