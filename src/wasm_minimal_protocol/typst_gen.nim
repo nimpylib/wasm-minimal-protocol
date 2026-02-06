@@ -10,13 +10,15 @@ when gen_t:
   proc addTypstCode(result: var string, wasm_plugin_name: string, funcName: string; params: NimNode) =
     result.add &"#let {funcName}("
     for p in params:
-      result.add p.strVal
+      result.add p[0].strVal
+      if not p[1].isNil:
+        result.add ':' & p[1].strVal
       result.add ','
     result.add ')'
 
     result.add &" = cbor({wasm_plugin_name}.{funcName}("
     for p in params:
-      result.add &"cbor.encode({p.strVal}),"
+      result.add &"cbor.encode({p[0].strVal}),"
     result.add ')'
 
     result.add ")\n"

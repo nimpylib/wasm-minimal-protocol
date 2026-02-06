@@ -1,5 +1,5 @@
 
-#import "t_gen_typst.typ": *
+#import "t_example_lib.typ": *
 
 #{
   assert(
@@ -12,5 +12,9 @@
   // hello()
   assert(
     runeLen("a😀c") == 3
+  )
+  assert(
+    withDefaultArgs(4, b: 2)
+    == "a=4, b=2, c=default"
   )
 }

@@ -4,6 +4,7 @@ import ./[wasi, cbor, typst_gen_decl]
 export cbor
 when gen_t:
   import std/macrocache
+  import ./typst_literal_gen
   export macrocache.pairs
 
 proc wasm_minimal_protocol_write_args_to_buffer(buffer: pointer){.importc, codegenDecl: typst_env_decl.}
@@ -79,16 +80,29 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool) =
         error "only string or byte-seq-like args allowed for this macro", eType
       else:
         notStrLike = true
-    if e[lastIdx].kind != nnkEmpty:
-      error "no default args allowed currently", e[i+1]
-      #TOOD:defval, aware in typst
+    let defval = e[lastIdx]
+    
+    template has_defval: bool = defval.kind != nnkEmpty
+    template no_defval =
+      if has_defval:
+        error "no default args allowed here", e[i+1]
+    when gen_t:
+      var typstExpr: NimNode
+      if bytesOnly:
+        no_defval
+      else:
+        if has_defval:
+          typstExpr = newStrLitNode toTypst defval
+    else:
+      no_defval
+
     for j in 0..<lastIdx2:
       nargs += 1
       let id = genSym(nskParam, "a" & $nargs)
       resParams.add newIdentDefs(id, bindSym"Size")
       let ne = ident e[j].strVal
       when gen_t:
-        curParamNames.add ne
+        curParamNames.add nnkExprEqExpr.newTree(ne, typstExpr)
       let nargs1s = newIntLitNode(nargs - 1)
       let totLenI1s = quote do: `totLensId`[`nargs1s`]
       infResBody.add quote do:
