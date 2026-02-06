@@ -10,10 +10,13 @@ A minimal protocol to write [typst plugins](https://typst.app/docs/reference/fou
 Nim plugins can use this pkg to automatically implement the protocol with a macro:
 
 ```Nim
-// Nim file
+# Nim file
 import pkg/wasm_minmal_protocol
 proc hello(): string{.export_typst_bytes.} =
   "hello from Nim"
+
+import std/math
+proc mycbrt(x: float): float{.export_typst.} = math.cbrt(x)
 ```
 
 ```typst
@@ -22,6 +25,8 @@ proc hello(): string{.export_typst_bytes.} =
 #let _ = p.wasm_minimal_protocol_NimMain()  // current needed
 
 #assert(str(p.hello()) == "hello from Nim")
+// use cbor for non-bytes argument
+#assert(2.0 == cbor(p.mycbrt(cbor.encode(8.0))))
 ```
 
 ref <https://typst.app/docs/reference/foundations/plugin/> for details.

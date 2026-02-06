@@ -12,6 +12,7 @@ bin           = @["wasm_minimal_protocol"]
 # Dependencies
 
 requires "nim >= 2.0.8"
+requires "cbor_serialization"
 
 
 var pylibPre = "https://github.com/nimpylib"
@@ -30,7 +31,7 @@ task testMin, "minimal test":
   let res = gorgeEx("nim-wasm-build-flags " & NimVersion, cache=NimVersion)
   if res.exitCode != 0:
     quit res.output
-  let cmd = "c " & res.output & " --hints:off "
+  let cmd = "c " & res.output & " -u:nimPreviewSlimSystem --hints:off "
 
   let name = "t_min"
   let o = "bin/" & name & ".wasm"
