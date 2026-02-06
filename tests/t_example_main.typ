@@ -26,10 +26,6 @@
     == "hello Tim, and Lily"
   )
   let dt = parseDatetime("2025-03-20T01:02:03")
-  let res = if (useCborious()) {
-    (2025, 3, 20, 1, 2, 3)
-  } else {
-    (year: 2025, month: 3, day: 20, hour: 1, minute: 2, second: 3)
-  }
+  let res = (year: 2025, month: 3, day: 20, hour: 1, minute: 2, second: 3)
   assert(dt == res)
 }

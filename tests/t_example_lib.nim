@@ -23,9 +23,6 @@ proc parseDatetime(x: string, format = "yyyy-MM-dd'T'HH:mm:ss"): MyDateTime =
   for k, v1 in fieldPairs(result):
     v1 = typeof(v1) getattr(res, k)
 
-proc useCborious: bool{.export_typst.} = defined(cborious)
-#XXX: pkg/cborious convert nim's `object` to typst's array
-
 export_typst_from parseDatetime
 
 proc withDefaultArgs(a: int, b: int = 42, c: string = "default"): string{.export_typst.} =
