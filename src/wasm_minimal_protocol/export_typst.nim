@@ -85,7 +85,7 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool) =
     template has_defval: bool = defval.kind != nnkEmpty
     template no_defval =
       if has_defval:
-        error "no default args allowed here", e[i+1]
+        error "no default args allowed here", defval
     when gen_t:
       var typstExpr: NimNode
       if bytesOnly:
