@@ -42,6 +42,22 @@ proc isStrLike(n: NimNode): bool =
 when gen_t:
   const collectTypstExports* = CacheTable"wasm_minimal_protocol_typst_exports"
 
+proc check_noSideEffect(def: NimNode) =
+  var noSideEffect = false
+  if def.kind == nnkFuncDef:
+    noSideEffect = true
+  else:
+    if def.kind != nnkProcDef:
+      error "only proc or func can be exported to typst, but got " & $def.kind, def
+    if def.pragma.findChild(it.eqIdent"noSideEffect") != nil:
+      noSideEffect = true
+
+  if not noSideEffect:
+    warning """only noSideEffect proc (aka. func) is guaranteed to always work properly in typst,
+please consider to change `proc` to `func` or add {.noSideEffect.} pragma if possible.
+ref plugin.transition in https://typst.app/docs/reference/foundations/plugin/ for details""", def
+
+
 proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_name = "") =
   when gen_t:
     var curParamNames = newNimNode nnkFormalParams
@@ -201,6 +217,7 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
 
 const wasm = defined(wasm)
 template export_pragma_impl(def; bytesOnly: bool, export_name = "") =
+  def.check_noSideEffect()
   when wasm:
     result = newStmtList(def)
     result.export_typst_impl(def, bytesOnly, export_name)
@@ -227,6 +244,8 @@ macro export_typst_from*(def: proc, export_name: static[string] = "") =
     import std/unidecode
     export_typst_from unidecode.unidecode
     # unidecode("北京") == "Bei Jing "
+  let defImpl = def.getImpl()
+  defImpl.check_noSideEffect()
   result = newStmtList()
   when wasm:
-    result.export_typst_impl(def.getImpl(), bytesOnly=false, export_name=export_name)
+    result.export_typst_impl(defImpl, bytesOnly=false, export_name=export_name)
