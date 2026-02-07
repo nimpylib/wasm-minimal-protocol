@@ -14,7 +14,8 @@ when defined(cborious):
     fromCbor(dd, T, flags)
 else:
   import pkg/cbor_serialization
-  export cbor_serialization
+  import pkg/cbor_serialization/std/[sets as cbor_sets, tables as cbor_tables]
+  export cbor_serialization, cbor_sets, cbor_tables
   template Cbor_encode*[T](d: T): untyped =
     bind Cbor, encode
     encode(typeof Cbor, d)
