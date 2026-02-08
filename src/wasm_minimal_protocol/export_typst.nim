@@ -57,10 +57,15 @@ proc check_noSideEffect(def: NimNode) =
 please consider to change `proc` to `func` or add {.noSideEffect.} pragma if possible.
 ref plugin.transition in https://typst.app/docs/reference/foundations/plugin/ for details""", def
 
-
+const exportNimDocToTypst*{.booldefine.} = true
 proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_name = "") =
   when gen_t:
     var curParamNames = newNimNode nnkFormalParams
+    when exportNimDocToTypst:
+      var doc: NimNode = nil
+      let body1 = def.body[0]
+      if body1.kind == nnkCommentStmt:
+        doc = body1
   let ori_prc_id = def.name
 
   let ori_prc_name = ori_prc_id.strVal
@@ -213,7 +218,9 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
   ndef.add resBody
   result.add ndef
   when gen_t:
-    collectTypstExports[export_wasm_name] = curParamNames
+    collectTypstExports[export_wasm_name] = when exportNimDocToTypst:
+      nnkPrefix.newTree(curParamNames, doc)
+    else: curParamNames
 
 const wasm = defined(wasm)
 template export_pragma_impl(def; bytesOnly: bool, export_name = "") =

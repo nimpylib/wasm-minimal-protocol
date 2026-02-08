@@ -7,6 +7,11 @@ when gen_t:
   import std/strformat
   from std/os import searchExtPos, `/`, relativePath
   import std/paths
+  import std/strutils
+  proc nimRstToTypst(s: string): string =
+    ## a very very simple rst to typst converter, only for doc comments in this project, not a general solution
+    ##  and it does quite a few things
+    s.replace("*/", r"""#"\u{2a}\u{2f}";""")
   const posOnlyButGotKwPre = "only pos-args allowed, but got kw-arg: "
   proc posOnlyBodyImpl(argsName: string): string =
     result = argsName & ".pos()"
@@ -16,7 +21,12 @@ assert(named.len() == 0, message: "only pos-args allowed but got kw-args: " + re
   const posOnlyChkName = "__nim_posOnlyChk"
   const posOnlyImpl = "#let " & posOnlyChkName & "(x) = " & posOnlyBodyImpl("x")
   template posOnly(argsName: string): string = posOnlyChkName & '(' & argsName & ')'
-  proc addTypstCode(result: var string, wasm_plugin_name: string, funcName: string; params: NimNode) =
+  proc addTypstCode(result: var string, wasm_plugin_name: string, funcName: string; params: NimNode; doc: NimNode) =
+    when exportNimDocToTypst:
+      if not doc.isNil:
+        result.add "/*"
+        result.add doc.strVal.nimRstToTypst()
+        result.add "*/\n"
     result.add &"#let {funcName}("
     var sparams = newSeq[string](params.len)
     for i, p in params:
@@ -57,8 +67,15 @@ assert(named.len() == 0, message: "only pos-args allowed but got kw-args: " + re
 #let {wasm_plugin_name} = plugin("{outDir/wasmName}")
 #let {wasm_plugin_name} = plugin.transition({wasm_plugin_name}.wasm_minimal_protocol_NimMain)
 """
-    for (f, params) in collectTypstExports.pairs:
-      result.code.addTypstCode(wasm_plugin_name, f, params)
+    for (f, spec) in collectTypstExports.pairs:
+      when exportNimDocToTypst:
+        let
+          params = spec[0]
+          doc = spec[1]
+      else:
+        let params = spec
+        const doc: NimNode = nil
+      result.code.addTypstCode(wasm_plugin_name, f, params, doc)
   template genTypstFile*() =
     bind toTypstCode, gen_typst
     static:
