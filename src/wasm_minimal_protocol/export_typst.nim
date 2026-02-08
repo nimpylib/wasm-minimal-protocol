@@ -77,7 +77,9 @@ type
 const ncTypst* = ncKebab
 
 const exportNimDocToTypst*{.booldefine.} = true
-proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_name: string|NameConvention = "") =
+const ExportNameAsIs = ""
+proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_name: string|NameConvention = ExportNameAsIs,
+   resKind = nnkProcDef) =
   when gen_t:
     var curParamNames = newNimNode nnkFormalParams
     var doc: NimNode = nil
@@ -91,7 +93,7 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
   let ori_prc_name = ori_prc_id.strVal.op2ident
   let nname = genSym(nskProc, "typst_exported_" & ori_prc_name)
   let export_wasm_name = when export_name is string:
-    if export_name == "": ori_prc_name else: export_name
+    if export_name == ExportNameAsIs: ori_prc_name else: export_name
   else:
     case export_name
     of ncAsIs: ori_prc_name
@@ -229,7 +231,7 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
     finally:
       `final`
   let emptyn = newEmptyNode()
-  let ndef = newNimNode nnkProcDef
+  let ndef = newNimNode resKind
   ndef.add nname
   ndef.add emptyn # term rewrite
   ndef.add emptyn # generic params
@@ -247,7 +249,7 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
       curParamNames, doc, newStrLitNode resFormat)
 
 const wasm = defined(wasm)
-template export_pragma_impl(def; bytesOnly: bool, export_name: untyped = "") =
+template export_pragma_impl(def; bytesOnly: bool, export_name: untyped = ExportNameAsIs) =
   def.check_noSideEffect()
   when wasm:
     result = newStmtList(def)
@@ -270,21 +272,79 @@ macro export_typst_as*(name: static[string], def) =
 macro export_typst_conv*(name: static[NameConvention], def) =
   export_pragma_impl(def, bytesOnly=false, export_name=name)
 
-template export_typst_fromImpl{.dirty.} =
+template export_typst_fromImpl(kind){.dirty.} =
   let defImpl = def.getImpl()
   defImpl.check_noSideEffect()
   result = newStmtList()
   when wasm:
-    result.export_typst_impl(defImpl, bytesOnly=false, export_name=export_name)
-macro export_typst_from*(def: proc, export_name: static[string] = "") =
-  runnableExamples:
-    import std/editdistance as libed
-    export_typst_from editDistance, "nim-edit-distance"
-    export_typst_from editDistance, ncTypst  # export as `edit-distance`
-    import std/unidecode
-    export_typst_from unidecode.unidecode
-    # unidecode("北京") == "Bei Jing "
-  export_typst_fromImpl
-macro export_typst_from*(def: proc, export_name: static[NameConvention]) =
-  export_typst_fromImpl
+    result.export_typst_impl(defImpl, bytesOnly=false, export_name=export_name,
+      resKind=kind)
 
+template export_typst_from_desc(doPragmas){.dirty.} =
+  let t = typ.getTypeImpl()
+  assert t.kind == nnkBracketExpr
+  let typImpl = t[1]
+  let emptyn = newEmptyNode()
+  let
+    oriParams = typImpl[0]
+    pragmas = doPragmas typImpl[1]
+  let params = newNimNode nnkFormalParams
+  let call = newCall(def)
+  params.add oriParams[0]  # resType
+  for i in 1 ..< oriParams.len:
+    let oriIdentDefs = oriParams[i]
+    let identDefs = nnkIdentDefs.newTree()
+    let hi = oriIdentDefs.len - 1
+    let hi2 = hi - 1
+    for i in 0 ..< hi2:
+      let p = ident oriIdentDefs[i].strVal
+      identDefs.add p
+      call.add p
+    identDefs.add oriIdentDefs[hi2]  # type
+    identDefs.add oriIdentDefs[hi]  # def
+    params.add identDefs
+  let defImpl = nnkProcDef.newTree(
+      genSym(nskProc, def.repr),
+      emptyn,  # term rewrite
+      emptyn,  # generic params
+      params,  # params
+      pragmas,  # pragma
+      emptyn,  # reversed
+      call
+  )
+  export_pragma_impl(defImpl, bytesOnly=false, export_name=export_name)
+
+
+template gen_export_typst_from_desc_pragmas(export_typst_from; kind; doPragmas){.dirty.} =
+  macro export_typst_from*(def: proc, export_name: static[string] = ExportNameAsIs) =
+    runnableExamples:
+      import std/editdistance as libed
+      export_typst_from editDistance, "nim-edit-distance"
+      export_typst_from editDistance, ncTypst  # export as `edit-distance`
+      import std/unidecode
+      export_typst_from unidecode.unidecode
+      # unidecode("北京") == "Bei Jing "
+    export_typst_fromImpl(kind)
+  macro export_typst_from*(def: proc, export_name: static[NameConvention]) =
+    export_typst_fromImpl(kind)
+  macro export_typst_from*(def; export_name: static[string]; typ: typedesc) =
+    export_typst_from_desc(doPragmas)
+
+  macro export_typst_from*(def; export_name: static[NameConvention]; typ: typedesc) =
+    export_typst_from_desc(doPragmas)
+
+  macro export_typst_from*(def; typ: typedesc) =
+    when wasm:
+      const export_name = ExportNameAsIs
+    export_typst_from_desc(doPragmas)
+
+template asIs(x): untyped = x
+proc plusNoSideEffect(x: NimNode): NimNode =
+  result = if x.kind == nnkEmpty: newNimNode nnkPragma
+  else:
+    assert x.kind == nnkPragma
+    x.copyNimTree
+  result.add ident"noSideEffect"
+
+gen_export_typst_from_desc_pragmas(export_typst_from, nnkProcDef, asIs)
+gen_export_typst_from_desc_pragmas(export_typst_from_func, nnkFuncDef, plusNoSideEffect)

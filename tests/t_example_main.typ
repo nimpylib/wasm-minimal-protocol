@@ -4,6 +4,10 @@
 #{
   let eq = assert.eq
   eq(
+    format-size(4096, includeSpace: true),
+    "4 KiB"
+  )
+  eq(
     hypot(3.0, 4.0), 5
   )
   eq(
