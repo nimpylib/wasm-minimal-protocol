@@ -1,7 +1,6 @@
 
 import std/macros
-import std/strutils
-import ./[wasi, cbor, typst_gen_decl]
+import ./[wasi, cbor, typst_gen_decl, utils]
 export cbor
 when gen_t:
   import std/macrocache
@@ -77,18 +76,6 @@ type
 
 const ncTypst* = ncKebab
 
-proc toKebabCase(s: string): string =
-  ## for effectivity, only care ASCII cases
-  result = newStringOfCap(s.len+1)
-  for c in s:
-    result.add case c
-    of 'A'..'Z':
-      if result.len > 0:
-        result.add '-'
-      c.toLowerAscii
-    of '_': '-'
-    else: c
-
 const exportNimDocToTypst*{.booldefine.} = true
 proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_name: string|NameConvention = "") =
   when gen_t:
@@ -101,7 +88,7 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
         doc = body1
   let ori_prc_id = def.name
 
-  let ori_prc_name = ori_prc_id.strVal
+  let ori_prc_name = ori_prc_id.strVal.op2ident
   let nname = genSym(nskProc, "typst_exported_" & ori_prc_name)
   let export_wasm_name = when export_name is string:
     if export_name == "": ori_prc_name else: export_name
