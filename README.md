@@ -5,12 +5,21 @@
 
 [docs]: https://wasm-minimal-potocol.nimpylib.org
 
-A minimal protocol to write [typst plugins](https://typst.app/docs/reference/foundations/plugin/).
+A _no-longer-minimal_ protocol to write [typst plugins](https://typst.app/docs/reference/foundations/plugin/), featured with:
+
+- auto bi-convert between typst and Nim **types** like float, string and tables
+- support default arguments and `varargs`
+- ability to export **existing** function to typst, via [`export_typst_from`](https://wasm-minimal-protocol.nimpylib.org/wasm_minimal_protocol/export_typst.html#export_typst_from.m%2Cproc%2Cstatic%5Bstring%5D)
+- reserving **doc** from Nim to typst, means no need to write document twice (turn off via compile flag [`-d:exportNimDocToTypst=off`](https://wasm-minimal-protocol.nimpylib.org/wasm_minimal_protocol/export_typst.html#exportNimDocToTypst))
+- alternative **cbor engine** to choose, via [`-d:cborious`](https://github.com/elcritch/cborious) [^cborious]
+- Fine-grained control over exported **name**, serialization & deserialization (ref [datetime-parse example](https://github.com/nimpylib/wasm-minimal-protocol/blob/master/tests/t_parse_datetime_lib.nim))
+
+[^cborious]: requires manually installation like `nimble install cborious`
 
 ## You want to write a plugin
 [Nim]: https://nim-lang.org/
 
-> For other languages like Rust, ref <https://github.com/astrale-sharp/wasm-minimal-protocol> 
+> For other languages like Rust, ref <https://github.com/astrale-sharp/wasm-minimal-protocol>, which is however really `minimal` (lacks features above).
 
 [Nim][] plugins can use this repo to automatically implement the protocol with a macro:
 
@@ -23,6 +32,7 @@ import std/[math, strutils]
 func cbrt(x: float): float{.export_typst.} = math.cbrt(x)
 func format(fmt: string, args: varargs[string]): string{.
   export_typst_as: "str-format".} = fmt % args
+
 export_typst_from fac, "factorial"
 # or `export_typst_from fac` to export as `fac`
 ```
