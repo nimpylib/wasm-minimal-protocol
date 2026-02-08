@@ -144,7 +144,7 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
         no_defval
       else:
         if has_defval:
-          typstExpr = newStrLitNode toTypst defval
+          typstExpr = newStrLitNode toTypst(defval, e[0])
           if eType.kind == nnkEmpty:
             eType = newCall("typeof", defval)
         # to support openArray[T] and varargs[T] (convert it to seq[T])

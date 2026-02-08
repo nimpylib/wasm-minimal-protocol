@@ -2,7 +2,7 @@
 import std/[strutils, unicode, macros]
 
 proc intLit*(n: SomeInteger): string = $n
-proc charLit*(r: Rune): string =
+proc charLitRaw(r: Rune): string =
   case r
   of '!'.Rune, '#'.Rune..'['.Rune,
       ']'.Rune..'~'.Rune:
@@ -14,16 +14,21 @@ proc charLit*(r: Rune): string =
   of Rune'\t': r"\t"
   else:
     "\\u{" & toHex(r.uint32) & '}'
-proc charLit*(c: char): string = charLit(Rune c)
+template charLitImpl(c) =
+  result.add '"'
+  result.add charLitRaw(c)
+  result.add '"'
+proc charLit*(c: char): string = charLitImpl(Rune c)
+proc charLit*(c: Rune): string = charLitImpl(c)
 proc strLit*(s: string): string =
   result.add '"'
   for r in s.runes:
-    result.add charLit r
+    result.add charLitRaw r
   result.add '"'
 
 proc floatLit*(f: SomeFloat): string = $f
 
-proc toTypst*(n: NimNode): string =
+proc toTypst*(n: NimNode, toGetEnumType: NimNode = nil): string =
   result = case n.kind
   of nnkIntLit..nnkInt64Lit: intLit n.intVal
   of nnkCharLit:charLit Rune n.intVal
@@ -37,4 +42,22 @@ proc toTypst*(n: NimNode): string =
     res.add ')'
     res
   else:
-    error "cannot convert to typst literal type", n
+    let tk = toGetEnumType.getType.typeKind
+    template cannotCvt(suf) =
+      error "cannot convert to typst literal type from " & suf, n
+    case tk
+    of ntyBool:
+      template eBool =
+        cannotCvt "non-literal boolean"
+      if n.kind == nnkIdent:
+        if n.strVal == "true": "true"
+        elif n.strVal == "false": "false"
+        else: eBool
+      else: eBool
+    of ntyEnum:
+      strLit $n
+    of ntyNone:
+      cannotCvt "non-typed value"
+      # no type info, meaning not a `typed` arg
+    else:
+      cannotCvt "nim type kind " & $tk
