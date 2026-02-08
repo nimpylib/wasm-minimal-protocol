@@ -39,8 +39,18 @@ proc isByteOpenArray(n: NimNode): bool =
 proc isStrLike(n: NimNode): bool =
   result = n.eqIdent"string" or n.isByteOpenArray
 
+template formatTypstResult*(f: string){.pragma.}  ## `f` shall contains `$1` to reference the original return value
+template dispatchTypst*(typstCallback: string){.pragma.}  ## `typstCallback` is a typst function name
 when gen_t:
   const collectTypstExports* = CacheTable"wasm_minimal_protocol_typst_exports"
+
+  proc getTypstResFmt(def: NimNode): string =
+    result = "$1"
+    for p in def.pragma:
+      if p.kind == nnkExprColonExpr:
+        let (head, val) = (p[0], p[1])
+        if head.eqIdent"dispatchTypst": return val.strVal & "(..($1))"
+        if head.eqIdent"formatTypstResult": return val.strVal
 
 proc check_noSideEffect(def: NimNode) =
   var noSideEffect = false
@@ -61,8 +71,9 @@ const exportNimDocToTypst*{.booldefine.} = true
 proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_name = "") =
   when gen_t:
     var curParamNames = newNimNode nnkFormalParams
+    var doc: NimNode = nil
+    let resFormat = getTypstResFmt(def)
     when exportNimDocToTypst:
-      var doc: NimNode = nil
       let body1 = def.body[0]
       if body1.kind == nnkCommentStmt:
         doc = body1
@@ -218,9 +229,8 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
   ndef.add resBody
   result.add ndef
   when gen_t:
-    collectTypstExports[export_wasm_name] = when exportNimDocToTypst:
-      nnkPrefix.newTree(curParamNames, doc)
-    else: curParamNames
+    collectTypstExports[export_wasm_name] = nnkBracket.newTree(
+      curParamNames, doc, newStrLitNode resFormat)
 
 const wasm = defined(wasm)
 template export_pragma_impl(def; bytesOnly: bool, export_name = "") =

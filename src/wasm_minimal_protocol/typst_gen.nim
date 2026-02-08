@@ -21,7 +21,10 @@ assert(named.len() == 0, message: "only pos-args allowed but got kw-args: " + re
   const posOnlyChkName = "__nim_posOnlyChk"
   const posOnlyImpl = "#let " & posOnlyChkName & "(x) = " & posOnlyBodyImpl("x")
   template posOnly(argsName: string): string = posOnlyChkName & '(' & argsName & ')'
-  proc addTypstCode(result: var string, wasm_plugin_name: string, funcName: string; params: NimNode; doc: NimNode) =
+  proc addTypstCode(result: var string, wasm_plugin_name: string, funcName: string;
+      params: NimNode; doc: NimNode,
+      resFormat: string = "$1"
+      ) =
     when exportNimDocToTypst:
       if not doc.isNil:
         result.add "/*"
@@ -46,12 +49,17 @@ assert(named.len() == 0, message: "only pos-args allowed but got kw-args: " + re
       result.add ','
     result.add ')'
 
-    result.add &" = cbor({wasm_plugin_name}.{funcName}("
+    result.add " = "
+    var res: string
+    res.add &" cbor({wasm_plugin_name}.{funcName}("
     for s in sparams:
-      result.add &"cbor.encode({s}),"
-    result.add ')'
+      res.add &"cbor.encode({s}),"
+    res.add ')'
+    res.add ')'
+    result.add resFormat % res
 
-    result.add ")\n"
+    result.add '\n'
+
   proc toTypstCode(): tuple[projName, code: string] =
     let wasm_plugin_name = "__nim_plugin"
     let projNameNim = querySetting projectName
@@ -68,14 +76,11 @@ assert(named.len() == 0, message: "only pos-args allowed but got kw-args: " + re
 #let {wasm_plugin_name} = plugin.transition({wasm_plugin_name}.wasm_minimal_protocol_NimMain)
 """
     for (f, spec) in collectTypstExports.pairs:
-      when exportNimDocToTypst:
-        let
-          params = spec[0]
-          doc = spec[1]
-      else:
-        let params = spec
-        const doc: NimNode = nil
-      result.code.addTypstCode(wasm_plugin_name, f, params, doc)
+      let
+        params = spec[0]
+        doc = spec[1]
+        resFormat = spec[2].strVal
+      result.code.addTypstCode(wasm_plugin_name, f, params, doc, resFormat)
   template genTypstFile*() =
     bind toTypstCode, gen_typst
     static:
