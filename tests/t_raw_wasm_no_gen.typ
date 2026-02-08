@@ -2,7 +2,7 @@
   let p = plugin("../bin/t_raw_wasm_no_gen.wasm")
   let _ = p.wasm_minimal_protocol_NimMain()
 
-  let eq(res, res1) = assert(res == res1)
+  let eq = assert.eq
   { // test bytes-target-function
     let bh = p.hello()
     let bf = p.f(bytes("ab"), bytes("asd"))

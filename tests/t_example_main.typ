@@ -2,27 +2,28 @@
 #import "t_example_lib.typ": *
 
 #{
-  assert(
-    hypot(3.0, 4.0) == 5
+  let eq = assert.eq
+  eq(
+    hypot(3.0, 4.0), 5
   )
-  assert(
-    str_count("123_456__653", "_")
-    == 3
+  eq(
+    str_count("123_456__653", "_"),
+    3
   )
   // hello()
-  assert(
-    runeLen("a😀c") == 3
+  eq(
+    runeLen("a😀c"), 3
   )
-  assert(
-    withDefaultArgs(4, b: 2)
-    == "a=4, b=2, c=default"
+  eq(
+    withDefaultArgs(4, b: 2),
+    "a=4, b=2, c=default"
   )
-  assert(
-    n-format("hello $#, and $#", ("Tim", "Lily"))
-    == "hello Tim, and Lily"
+  eq(
+    n-format("hello $#, and $#", ("Tim", "Lily")),
+    "hello Tim, and Lily"
   )
-  assert(
-    n-format-v("hello $#, and $#", "Tim", "Lily")
-    == "hello Tim, and Lily"
+  eq(
+    n-format-v("hello $#, and $#", "Tim", "Lily"),
+    "hello Tim, and Lily"
   )
 }
