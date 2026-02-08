@@ -7,15 +7,15 @@
     hypot(3.0, 4.0), 5
   )
   eq(
-    str_count("123_456__653", "_"),
+    str-count("123_456__653", "_"),
     3
   )
   // hello()
   eq(
-    runeLen("a😀c"), 3
+    rune-len("a😀c"), 3
   )
   eq(
-    withDefaultArgs(4, b: 2),
+    with-default-args(4, b: 2),
     "a=4, b=2, c=default"
   )
   eq(

@@ -32,6 +32,7 @@ import std/[math, strutils]
 func cbrt(x: float): float{.export_typst.} = math.cbrt(x)
 func format(fmt: string, args: varargs[string]): string{.
   export_typst_as: "str-format".} = fmt % args
+func strCount(s, sub: string): string{.export_typst_conv(ncTypst).} = s.count sub
 
 export_typst_from fac, "factorial"
 # or `export_typst_from fac` to export as `fac`
@@ -55,9 +56,10 @@ Then write:
 // Typst file
 #import "/path/to/plugin.typ": *
 // no need to call cbor
-#assert(2.0 == cbrt(8.0))
+#assert.eq(2.0, cbrt(8.0))
 #str-format("$1 $2 was somehow translated literally", "violet", "evergarden")
 #str-format("$# and $# refer to each", "spice", "wolf")
+#assert.eq(str-count("litlighilit", "i"), 4)
 #factorial(3)
 ```
 

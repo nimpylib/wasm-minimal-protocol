@@ -1,5 +1,6 @@
 
 import std/macros
+import std/strutils
 import ./[wasi, cbor, typst_gen_decl]
 export cbor
 when gen_t:
@@ -67,8 +68,29 @@ proc check_noSideEffect(def: NimNode) =
 please consider to change `proc` to `func` or add {.noSideEffect.} pragma if possible.
 ref plugin.transition in https://typst.app/docs/reference/foundations/plugin/ for details""", def
 
+type
+  NameConvention* = enum
+    ncAsIs     ## export with the same name as Nim proc
+    ncKebab    ## export with kebab-case name
+    # ncSnake    ## export with snake_case name
+    # ncPascal   ## export with PascalCase name
+
+const ncTypst* = ncKebab
+
+proc toKebabCase(s: string): string =
+  ## for effectivity, only care ASCII cases
+  result = newStringOfCap(s.len+1)
+  for c in s:
+    result.add case c
+    of 'A'..'Z':
+      if result.len > 0:
+        result.add '-'
+      c.toLowerAscii
+    of '_': '-'
+    else: c
+
 const exportNimDocToTypst*{.booldefine.} = true
-proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_name = "") =
+proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_name: string|NameConvention = "") =
   when gen_t:
     var curParamNames = newNimNode nnkFormalParams
     var doc: NimNode = nil
@@ -81,7 +103,12 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
 
   let ori_prc_name = ori_prc_id.strVal
   let nname = genSym(nskProc, "typst_exported_" & ori_prc_name)
-  let export_wasm_name = if export_name == "": ori_prc_name else: export_name
+  let export_wasm_name = when export_name is string:
+    if export_name == "": ori_prc_name else: export_name
+  else:
+    case export_name
+    of ncAsIs: ori_prc_name
+    of ncTypst: ori_prc_name.toKebabCase
   let exportcPragma = ident"exportc"
   let exportPragma = nnkExprColonExpr.newTree(
     ident"codegenDecl",
@@ -233,7 +260,7 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
       curParamNames, doc, newStrLitNode resFormat)
 
 const wasm = defined(wasm)
-template export_pragma_impl(def; bytesOnly: bool, export_name = "") =
+template export_pragma_impl(def; bytesOnly: bool, export_name: untyped = "") =
   def.check_noSideEffect()
   when wasm:
     result = newStmtList(def)
@@ -247,22 +274,30 @@ macro export_typst_bytes_as*(name: static[string]; def) = export_pragma_impl(def
   bytesOnly=true, export_name=name)
 macro export_typst*(def) =
   runnableExamples:
-    proc hello: string{.export_typst.} = "hello"
+    func hello: string{.export_typst.} = "hello"
   export_pragma_impl(def, bytesOnly=false)
 macro export_typst_as*(name: static[string], def) =
   runnableExamples:
-    proc hello: string{.export_typst_as"hello-from-nim".} = "hello"
+    func hello: string{.export_typst_as"hello-from-nim".} = "hello"
+  export_pragma_impl(def, bytesOnly=false, export_name=name)
+macro export_typst_conv*(name: static[NameConvention], def) =
   export_pragma_impl(def, bytesOnly=false, export_name=name)
 
-macro export_typst_from*(def: proc, export_name: static[string] = "") =
-  runnableExamples:
-    import std/editdistance as libed
-    export_typst_from editDistance, "edit-distance"
-    import std/unidecode
-    export_typst_from unidecode.unidecode
-    # unidecode("北京") == "Bei Jing "
+template export_typst_fromImpl{.dirty.} =
   let defImpl = def.getImpl()
   defImpl.check_noSideEffect()
   result = newStmtList()
   when wasm:
     result.export_typst_impl(defImpl, bytesOnly=false, export_name=export_name)
+macro export_typst_from*(def: proc, export_name: static[string] = "") =
+  runnableExamples:
+    import std/editdistance as libed
+    export_typst_from editDistance, "nim-edit-distance"
+    export_typst_from editDistance, ncTypst  # export as `edit-distance`
+    import std/unidecode
+    export_typst_from unidecode.unidecode
+    # unidecode("北京") == "Bei Jing "
+  export_typst_fromImpl
+macro export_typst_from*(def: proc, export_name: static[NameConvention]) =
+  export_typst_fromImpl
+
