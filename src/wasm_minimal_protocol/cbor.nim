@@ -4,8 +4,8 @@ when defined(cborious):
   import pkg/cborious
   export cborious
   type CborError* = CborInvalidHeaderError
-  # def is CborObjToArray instead of CborObjToMap
-  const flags = {CborObjToMap, CborCheckHoleyEnums}
+  # def is {CborObjToArray, CborCheckHoleyEnums} instead of CborObjToMap
+  const flags = {CborObjToMap, CborEnumAsString, CborCheckHoleyEnums}
   template Cbor_encode*[T](d: T): untyped =
     bind toCbor, flags
     toCbor(d, flags)
