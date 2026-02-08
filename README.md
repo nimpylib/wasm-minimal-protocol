@@ -20,8 +20,8 @@ A minimal protocol to write [typst plugins](https://typst.app/docs/reference/fou
 import pkg/wasm_minmal_protocol
 
 import std/[math, strutils]
-proc cbrt(x: float): float{.export_typst.} = math.cbrt(x)
-proc format(fmt: string, args: varargs[string]): string{.
+func cbrt(x: float): float{.export_typst.} = math.cbrt(x)
+func format(fmt: string, args: varargs[string]): string{.
   export_typst_as: "str-format".} = fmt % args
 export_typst_from fac, "factorial"
 # or `export_typst_from fac` to export as `fac`
