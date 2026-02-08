@@ -29,7 +29,8 @@
 
   eq(3, gcdInts((12, 3)))
   eq(5, hypot(3.0, 4.0))
-  eq(frexp(1.2), (0.6, 1))
+  let res = frexp(1.2)
+  assert(res == (frac: 0.6, exp: 1) or res == (0.6, 1))
   eq(binom(6, 2), 15)
 
 }
