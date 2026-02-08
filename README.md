@@ -29,12 +29,20 @@ A _no-longer-minimal_ protocol to write [typst plugins](https://typst.app/docs/r
 import pkg/wasm_minmal_protocol
 
 import std/[math, strutils]
-func cbrt(x: float): float{.export_typst.} = math.cbrt(x)
-func format(fmt: string, args: varargs[string]): string{.
-  export_typst_as: "str-format".} = fmt % args
-func strCount(s, sub: string): string{.export_typst_conv(ncTypst).} = s.count sub
+from std/sugar import `->`
 
-export_typst_from fac, "factorial"
+# used as `{.exportc.}`
+func mew(n: int): string{.export_typst.} =
+  "mew~".repeat n
+
+export_typst_from_func spaces
+export_typst_from_func fac, "factorial"
+export_typst_from_func formatSize, ncTypst  # use typst name convention
+
+# overloaded functions must be specified with a signature:
+export_typst_from_func cbrt, (float) -> float
+export_typst_from_func format, "str-format", (string, varargs[string]) -> string
+export_typst_from_func strCount, "str-count", (string, string) -> string
 # or `export_typst_from fac` to export as `fac`
 ```
 
