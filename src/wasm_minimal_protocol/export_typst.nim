@@ -205,13 +205,16 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
     # if has arg
     let totLen = quote do: `totLensId`[`nIdentDefs`]
     infResBody.add quote do:
-      let `bufId` = alloc(`totLen`)
+      {.noSideEffect.}:
+        let `bufId` = alloc(`totLen`)
       wasm_minimal_protocol_write_args_to_buffer(`bufId`)
     resBody.add quote do:
       var `totLensId`: array[`nargsp1`, `Size`]
       # an acc sum len
       # #0 is 0
-    newCall("dealloc", bufId)
+    quote do:
+      {.noSideEffect.}:
+        dealloc `bufId`
 
   if not bytesOnly:
     let Cbor_encodeId = bindSym"Cbor_encode"
@@ -249,28 +252,14 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
       curParamNames, doc, newStrLitNode resFormat)
 
 const wasm = defined(wasm)
-template export_pragma_impl(def; bytesOnly: bool, export_name: untyped = ExportNameAsIs) =
+proc export_pragma_impl(def: NimNode; bytesOnly: bool, export_name: string|NameConvention = ExportNameAsIs): NimNode =
   def.check_noSideEffect()
   when wasm:
     result = newStmtList(def)
     result.export_typst_impl(def, bytesOnly, export_name)
   else:
-    def.addPragma ident"used"
-    result = def
-
-macro export_typst_bytes*(def) = export_pragma_impl(def, bytesOnly=true)
-macro export_typst_bytes_as*(name: static[string]; def) = export_pragma_impl(def,
-  bytesOnly=true, export_name=name)
-macro export_typst*(def) =
-  runnableExamples:
-    func hello: string{.export_typst.} = "hello"
-  export_pragma_impl(def, bytesOnly=false)
-macro export_typst_as*(name: static[string], def) =
-  runnableExamples:
-    func hello: string{.export_typst_as"hello-from-nim".} = "hello"
-  export_pragma_impl(def, bytesOnly=false, export_name=name)
-macro export_typst_conv*(name: static[NameConvention], def) =
-  export_pragma_impl(def, bytesOnly=false, export_name=name)
+    result = def.copyNimTree
+    result.addPragma ident"used"
 
 template export_typst_fromImpl(kind){.dirty.} =
   let defImpl = def.getImpl()
@@ -280,7 +269,22 @@ template export_typst_fromImpl(kind){.dirty.} =
     result.export_typst_impl(defImpl, bytesOnly=false, export_name=export_name,
       resKind=kind)
 
-template export_typst_from_desc(doPragmas){.dirty.} =
+macro export_typst_bytes*(def: typed) = export_pragma_impl(def, bytesOnly=true)
+macro export_typst_bytes_as*(name: static[string]; def: typed) = export_pragma_impl(def,
+  bytesOnly=true, export_name=name)
+
+macro export_typst*(def: typed) =
+  runnableExamples:
+    func hello: string{.export_typst.} = "hello"
+  export_pragma_impl(def, bytesOnly=false)
+macro export_typst_as*(name: static[string], def: typed) =
+  runnableExamples:
+    func hello: string{.export_typst: "hello-from-nim".} = "hello"
+  export_pragma_impl(def, bytesOnly=false, export_name=name)
+macro export_typst_conv*(name: static[NameConvention], def: typed) =
+  export_pragma_impl(def, bytesOnly=false, export_name=name)
+
+template export_typst_from_desc(name; doPragmas): untyped{.dirty.} =
   let t = typ.getTypeImpl()
   assert t.kind == nnkBracketExpr
   let typImpl = t[1]
@@ -312,7 +316,7 @@ template export_typst_from_desc(doPragmas){.dirty.} =
       emptyn,  # reversed
       call
   )
-  export_pragma_impl(defImpl, bytesOnly=false, export_name=export_name)
+  export_pragma_impl(defImpl, bytesOnly=false, export_name=name)
 
 
 template gen_export_typst_from_desc_pragmas(export_typst_from; kind; doPragmas){.dirty.} =
@@ -328,15 +332,13 @@ template gen_export_typst_from_desc_pragmas(export_typst_from; kind; doPragmas){
   macro export_typst_from*(def: proc, export_name: static[NameConvention]) =
     export_typst_fromImpl(kind)
   macro export_typst_from*(def; export_name: static[string]; typ: typedesc) =
-    export_typst_from_desc(doPragmas)
+    export_typst_from_desc(export_name, doPragmas)
 
   macro export_typst_from*(def; export_name: static[NameConvention]; typ: typedesc) =
-    export_typst_from_desc(doPragmas)
+    export_typst_from_desc(export_name, doPragmas)
 
   macro export_typst_from*(def; typ: typedesc) =
-    when wasm:
-      const export_name = ExportNameAsIs
-    export_typst_from_desc(doPragmas)
+    export_typst_from_desc(ExportNameAsIs, doPragmas)
 
 template asIs(x): untyped = x
 proc plusNoSideEffect(x: NimNode): NimNode =
