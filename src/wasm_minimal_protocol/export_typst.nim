@@ -91,7 +91,7 @@ proc export_typst_impl(result: NimNode, def: NimNode; bytesOnly: bool, export_na
   let ori_prc_id = def.name
 
   let ori_prc_name = ori_prc_id.strVal.op2ident
-  let nname = genSym(nskProc, "typst_exported_" & ori_prc_name)
+  let nname = ident("typst_exported_" & ori_prc_name)
   let export_wasm_name = when export_name is string:
     if export_name == ExportNameAsIs: ori_prc_name else: export_name
   else:
@@ -269,18 +269,33 @@ template export_typst_fromImpl(kind){.dirty.} =
     result.export_typst_impl(defImpl, bytesOnly=false, export_name=export_name,
       resKind=kind)
 
+#FIXME: i donno why export_typst cannot being defined as export_typst_bytes
+# but if so, it'll `Error: redefinition of 'xx'`
 macro export_typst_bytes*(def: typed) = export_pragma_impl(def, bytesOnly=true)
-macro export_typst_bytes_as*(name: static[string]; def: typed) = export_pragma_impl(def,
+macro export_typst_bytes*(name: static[string]; def: typed) = export_pragma_impl(def,
   bytesOnly=true, export_name=name)
+template export_typst_bytes_as*(name: static[string]; def: typed) =
+  bind export_typst_bytes
+  export_typst_bytes(name, def)
 
-macro export_typst*(def: typed) =
+macro export_typstAux(def: typed) =
+  export_pragma_impl(def, bytesOnly=false)
+macro export_typst_asAux(name: static[string], def: typed) =
+  export_pragma_impl(def, bytesOnly=false, export_name=name)
+template export_typst*(def) =
   runnableExamples:
     func hello: string{.export_typst.} = "hello"
-  export_pragma_impl(def, bytesOnly=false)
-macro export_typst_as*(name: static[string], def: typed) =
+  bind export_typstAux
+  export_typstAux(def)
+template export_typst*(name; def) =
   runnableExamples:
     func hello: string{.export_typst: "hello-from-nim".} = "hello"
-  export_pragma_impl(def, bytesOnly=false, export_name=name)
+  bind export_typst_asAux
+  export_typst_asAux(name, def)
+template export_typst_as*(name: static[string], def: typed) =
+  bind export_typst_asAux
+  export_typst_asAux(name, def)
+
 macro export_typst_conv*(name: static[NameConvention], def: typed) =
   export_pragma_impl(def, bytesOnly=false, export_name=name)
 

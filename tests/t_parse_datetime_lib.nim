@@ -15,7 +15,7 @@ when true:  # define toTypst for DateTime
       v1 = typeof(v1) getattr(res, k)
 
 func parseDatetime(x: string, format = "yyyy-M-d'T'H:m:s"): TypstDatetimeDict{.
-    dispatchTypst: "datetime", export_typst_as: "datetime-parse".} =
+    dispatchTypst: "datetime", export_typst: "datetime-parse".} =
   ## ref https://nim-lang.org/docs/times.html#parsing-and-formatting-dates
   ##   for `format` syntax
   if 'z' in format:
