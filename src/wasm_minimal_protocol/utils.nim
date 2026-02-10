@@ -7,7 +7,7 @@ proc toKebabCase*(s: string): string =
   for c in s:
     result.add case c
     of 'A'..'Z':
-      if result.len > 0:
+      if result.len > 0 and result[^1] != '-':
         result.add '-'
       c.toLowerAscii
     of '_': '-'
