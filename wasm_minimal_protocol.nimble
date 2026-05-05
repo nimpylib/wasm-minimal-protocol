@@ -13,14 +13,14 @@ namedBin["wasm_minimal_protocol"] = mainBin
 
 # Dependencies
 
-requires "nim >= 2.0.8"
+requires "nim > 2.0.8"
 when defined(cborious):
   requires "cborious"
 else:
   requires "cbor_serialization"
 
 
-var pylibPre = "https://github.com/nimpylib"
+var pylibPre = "https://github.com/nimwasm"
 let envVal = getEnv("NIMPYLIB_PKGS_BARE_PREFIX")
 if envVal != "": pylibPre = ""
 elif pylibPre[^1] != '/':
@@ -30,6 +30,7 @@ template pylib(x, ver) =
            else: pylibPre & x
 
 pylib "wasm_backend", " ^= 0.1.2"
+pylib "wasi_stub", " ^= 0.1.0"
 
 task test, "test, assuming `nimble build` has been run":
   #taskWithArgs buildWasmLib, "build .wasm(wasi) library":

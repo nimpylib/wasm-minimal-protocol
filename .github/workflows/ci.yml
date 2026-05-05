@@ -27,39 +27,6 @@ jobs:
       with:
         nim-version: ${{ env.nim-version }}
 
-    - name: resolve latest wasi-stub tag
-      id: wasi-stub-tag
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const { data: releases } = await github.rest.repos.listReleases({
-            owner: 'astrale-sharp',
-            repo: 'wasm-minimal-protocol',
-            per_page: 100,
-          })
-
-          const release = releases.find((item) => item.tag_name.startsWith('wasi-stub-'))
-
-          if (!release) {
-            core.setFailed('No release matching wasi-stub-* was found')
-          }
-
-          core.setOutput('tag_name', release.tag_name)
-
-    - name: setup wasm-stub
-      uses: robinraju/release-downloader@v1
-      with:
-        repository: astrale-sharp/wasm-minimal-protocol
-        tag: ${{ steps.wasi-stub-tag.outputs.tag_name }}
-        fileName: 'wasi-stub-x86_64-unknown-linux-musl.tar'
-        extract: true
-
-    - name: Add wasm-stub to PATH
-      run: |
-        stubdir="${{ github.workspace }}/wasi-stub-x86_64-unknown-linux-musl"
-        chmod +x "$stubdir/wasi-stub"
-        echo "$stubdir" >> "$GITHUB_PATH"
-
     - name: setup wasi sdk
       uses: konsumer/install-wasi-sdk@v1
     - name: setup typst

@@ -4,6 +4,7 @@ import std/os
 import std/osproc
 
 import pkg/wasm_backend
+import pkg/wasi_stub
 
 proc findExeOrRaise(exe: string): string =
   result = findExe(exe)
@@ -32,5 +33,4 @@ proc compile*(nimSrcPath: string, outdir = "", nim = "", additionalFlags = "") =
   checked_run(cmd & " -o:" & wasmFile & ' ' & additionalFlags & ' ' & nimSrcPath.quoteShell)
   assert fileExists wasmFile
 
-  let stubExe = findExeOrRaise("wasi-stub")
-  checked_run(stubExe & " " & wasmFile & " -o " & wasmFile)
+  stubWasiFunctionsForPath(wasmFile, wasmFile)
