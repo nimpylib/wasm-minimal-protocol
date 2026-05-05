@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.1.2"
+version       = "0.1.3"
 author        = "litlighilit"
 description   = "A minimal protocol to write typst plugins."
 license       = "MIT"
