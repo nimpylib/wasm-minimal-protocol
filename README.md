@@ -73,13 +73,3 @@ Then write:
 
 You should also take a look at this repository's [examples](./tests/).
 
-## wasi-stub
-
-The runtime used by typst do not allow the plugin to import any function (beside the ones used by the protocol). In particular, if your plugin is compiled for WASI, it will not be able to be loaded by typst.
-
-To get around that, you can use wasi-stub. It will detect all WASI-related imports, and replace them by stubs that do nothing.
-
-Install it from [wasi-stub repo][wasi-stub],
-either via cargo or `Github Release`
-
-[wasi-stub]: https://github.com/astrale-sharp/wasm-minimal-protocol
