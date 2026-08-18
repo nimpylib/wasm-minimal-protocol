@@ -43,6 +43,10 @@ Options:
       if nimSrc != "":
         quit("Only one nim source file is allowed")
       nimSrc = k
-  compile(nimSrcPath=nimSrc, outdir=outdir, nim=nim,
-    additionalFlags=additions)
+  try:
+    compile(nimSrcPath=nimSrc, outdir=outdir, nim=nim,
+      additionalFlags=additions)
+  except OSError as e:
+    stderr.writeLine e.msg
+    quit int e.errorCode
 

@@ -15,7 +15,9 @@ const options = {poEvalCommand, poStdErrToStdOut}
 proc checked_run(cmd: string): string{.discardable.} =
   let tup = execCmdEx(cmd, options=options)
   if tup.exitCode != 0:
-    raise newException(ValueError, "command failed: " & cmd & "\nOutput:\n" & tup.output)
+    let e = newException(OSError, "command failed: " & cmd & "\nOutput:\n" & tup.output)
+    e.errorCode = typeof(e.errorCode) tup.exitCode
+    raise e
   result = tup.output
 
 proc compile*(nimSrcPath: string, outdir = "", nim = "", additionalFlags = "") =
