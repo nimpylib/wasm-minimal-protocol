@@ -29,7 +29,7 @@ template pylib(x, ver) =
   requires if pylibPre == "": x & ver
            else: pylibPre & x
 
-pylib "wasm_backend", " ^= 0.1.2"
+pylib "wasm_backend", " ^= 0.1.4"
 pylib "wasi_stub", " ^= 0.1.0"
 
 task test, "test, assuming `nimble build` has been run":
